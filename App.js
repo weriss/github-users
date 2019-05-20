@@ -1,7 +1,7 @@
 import LinearGradient from 'react-native-linear-gradient'
 import React,{Component } from 'react'
 import {ListItem} from  'react-native-elements'
-import {Text, StyleSheet, Dimensions, FlatList, View,Image, Button, Alert, TextInput,ToastAndroid,LayoutAnimation,} from 'react-native'
+import {Text, StyleSheet, Dimensions, FlatList, View,Image, Alert, TextInput, ScrollView} from 'react-native'
 import { createStackNavigator, createAppContainer } from "react-navigation";
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import  {DeviceEventEmitter} from 'react-native';
@@ -119,8 +119,31 @@ class DetailsScreen extends React.Component {
     this.state={
       user:this.props.navigation.getParam('param1'),
       order:this.props.navigation.getParam('param2'),
+      person:[],
       isSelect:-1,
+      following:[],
+      following_url:'',
     }
+  }
+  componentDidMount(){
+    fetch(this.state.user[this.state.order].url)
+      .then( response => response.json())
+      .then( data => this.setState({
+        person:data
+      }))
+      .catch( error => alert(error) )
+      let str=this.state.user[this.state.order].following_url;
+      let s='{/other_user}';
+      let len=str.length-s.length;
+      let retstr=str.substr(0,len);
+      // let retstr='https://api.github.com/users/mojombo/following';
+      // this.setState({following:retstr});
+      fetch(retstr)
+        .then( response => response.json())
+        .then( data => this.setState({
+          following:data
+        }))
+        .catch( error => alert(error) )
   }
   static navigationOptions = {
     headerStyle: {
@@ -133,7 +156,6 @@ class DetailsScreen extends React.Component {
       <View style={styles.containerDetails}>
         <View style={styles.boxView1}>
           <View  style={styles.imgBackground}>
-        {/* <Text>{this.state.user[this.state.order].login}</Text> */}
           <Image source={{uri:this.state.user[this.state.order].avatar_url}} style={styles.imgStyle}></Image>
           </View>
         </View>
@@ -147,9 +169,24 @@ class DetailsScreen extends React.Component {
             <TextInput style={styles.inputText} autoFocus={true} onEndEditing={(event)=> this.changeLogin(this.state.order,event.nativeEvent.text)}></TextInput>
             }
             <Text style={styles.typeText}>{this.state.user[this.state.order].type}</Text>
+            <View style={styles.infoView}>
+              {this.state.person.name===null ? <View/>:<Text style={styles.nameText}>name:{this.state.person.name}</Text>}
+              {this.state.person.company===null ? <View/>:<Text style={styles.nameText}>company:{this.state.person.company}</Text>}
+              {this.state.person.location===null ? <View/>:<Text style={styles.nameText}>location:{this.state.person.location}</Text>}
+              {this.state.person.blog===null ? <View/>:<Text style={styles.nameText}>blog:{this.state.person.blog}</Text>}
+              {this.state.person.bio===null ? <View/>:<Text style={styles.nameText}>bio:{this.state.person.bio}</Text>}
+              {this.state.person.email===null ? <View/>:<Text style={styles.nameText}>email:{this.state.person.email}</Text>}
+              {this.state.person.hireable===null ? <View/>:<Text style={styles.nameText}>hireable:{this.state.person.hireable}</Text>}
+              {/* <Text style={styles.nameText}>hireable:{this.state.following[0].login}</Text> */}
+
+            {/* <View> */}
+              {this.state.following.map((e,i)=> i<9? <Text key={i} style={styles.ok}>{e.login}</Text>:null)}
+            {/* </View> */}
+
+            </View>
         </View>
         <View style={styles.boxView3}>
-            <Text style={styles.bottomText}>https://api.github.com/users/{this.state.user[this.state.order].login}</Text>
+            <Text style={styles.bottomText}>{this.state.user[this.state.order].url}</Text>
         </View>
       </View>
     )
@@ -162,15 +199,18 @@ class DetailsScreen extends React.Component {
     let cc=[...this.state.user]; 
     let is=-1;
     cc[index].login=text;
+    cc[index].url="https://api.github.com/users/";
+    cc[index].url+=text;
     this.setState({user:cc,isSelect:is});
     DeviceEventEmitter.emit('details',cc);
   }
-}
 
+}
 const AppNavigator = createStackNavigator(
   {
     Home: HomeScreen,
-    Details: DetailsScreen
+    Details: DetailsScreen,
+    // Following: FollowingScreen,
   },
   {
     initialRouteName: "Home"
@@ -230,19 +270,22 @@ const styles = StyleSheet.create({
     alignItems:'center',
     width:Width,
     height:Height*0.3,
-    marginBottom:10,
+    // backgroundColor:'orange'
+    // marginBottom:10,
   },
   boxView2:{
     justifyContent:'flex-start',
     alignItems:'center',
     width:Width,
     height:Height*0.5,
+    // backgroundColor:'yellow'
   },
   boxView3:{
     justifyContent:'flex-start',
     alignItems:'center',
     width:Width,
     height:Height*0.1,
+    // backgroundColor:'red'
   },
   bottomText:{
     fontSize:15,
@@ -259,12 +302,24 @@ const styles = StyleSheet.create({
   editImg:{
     width:20,
     height:20,
-    marginBottom:10
+    // marginBottom:10
   },
   inputText:{
     marginTop:10,
     width:50,
     height:50,
+  },
+  infoView:{
+    justifyContent:'center',
+    alignItems:'center'
+  },
+  nameText:{
+    color:'#CB81B1',
+    fontSize:15,
+  },
+  ok:{
+    fontSize:15,
+    color:'#CB81B1'
   }
 });
 export default createAppContainer(AppNavigator);
